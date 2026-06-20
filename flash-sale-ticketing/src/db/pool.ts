@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from 'pg'
+import { Pool, QueryResult,QueryResultRow } from 'pg'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -8,9 +8,9 @@ export const pool = new Pool({
 })
 
 
-export const query = <T>(
+export const query = <T extends QueryResultRow>(
   text: string,
-  params?: unknown[]
+  params?: any[]
 ): Promise<QueryResult<T>> => {
-  return pool.query<T>(text, params)
+  return pool.query(text, params)
 }
