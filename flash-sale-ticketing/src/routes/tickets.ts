@@ -1,14 +1,12 @@
 import { Router, Request, Response } from 'express'
-import { query } from '../db/pool'
+import { query,withTransaction } from '../db/pool'
 import { Ticket, Booking, BookingRequest } from '../types'
 
 const router = Router()
 
-// ─── GET /api/tickets/:eventId ───────────────────────────────────────────────
-// Returns all available tickets for a given event
+
 router.get('/tickets/:eventId', async (req: Request, res: Response) => {
-  // TypeScript note — req.params is typed as Record<string, string>
-  // so we parse it to number manually
+ 
   const eventId = parseInt(req.params.eventId)
 
   if (isNaN(eventId)) {
@@ -36,12 +34,9 @@ router.get('/tickets/:eventId', async (req: Request, res: Response) => {
   }
 })
 
-// ─── POST /api/bookings ───────────────────────────────────────────────────────
-// THE BROKEN VERSION — no transaction, no locking
-// Two requests hitting this at the same time WILL oversell
+
+
 router.post('/bookings', async (req: Request, res: Response) => {
-  // TypeScript note — "as BookingRequest" tells TypeScript
-  // to trust that req.body matches our interface
   const { ticket_id, user_id } = req.body as BookingRequest
 
   if (!ticket_id || !user_id) {
@@ -50,47 +45,52 @@ router.post('/bookings', async (req: Request, res: Response) => {
   }
 
   try {
-    // ⚠️  STEP 1: Check if ticket is available
-    // Problem: another request can pass this check at the same time
-    const checkResult = await query<Ticket>(
-      `SELECT id, status FROM tickets WHERE id = $1`,
-      [ticket_id]
-    )
+    const result = await withTransaction(async (client) => {
+      // 🔒 This is the fix. FOR UPDATE locks this row until COMMIT/ROLLBACK.
+      // Any other transaction trying to SELECT FOR UPDATE the same row
+      // will block here until this one finishes.
+      const checkResult = await client.query<Ticket>(
+        `SELECT id, status FROM tickets WHERE id = $1 FOR UPDATE`,
+        [ticket_id]
+      )
 
-    if (checkResult.rowCount === 0) {
-      res.status(404).json({ error: 'Ticket not found' })
-      return
-    }
+      if (checkResult.rowCount === 0) {
+        // TypeScript note — throwing a custom error object lets us
+        // carry an HTTP status code out of the transaction callback
+        throw { statusCode: 404, message: 'Ticket not found' }
+      }
 
-    const ticket = checkResult.rows[0]
+      const ticket = checkResult.rows[0]
 
-    if (ticket.status !== 'available') {
-      res.status(409).json({ error: 'Ticket is no longer available' })
-      return
-    }
+      if (ticket.status !== 'available') {
+        throw { statusCode: 409, message: 'Ticket is no longer available' }
+      }
 
-    // ⚠️  STEP 2: Mark ticket as booked
-    // Problem: the gap between STEP 1 and STEP 2 is where overselling happens
-    await query(
-      `UPDATE tickets
-       SET status = 'booked', held_by = $1
-       WHERE id = $2`,
-      [user_id, ticket_id]
-    )
+      // Still inside the SAME transaction, on the SAME locked row
+      await client.query(
+        `UPDATE tickets SET status = 'booked', held_by = $1 WHERE id = $2`,
+        [user_id, ticket_id]
+      )
 
-    // ⚠️  STEP 3: Create the booking record
-    const bookingResult = await query<Booking>(
-      `INSERT INTO bookings (ticket_id, user_id, status)
-       VALUES ($1, $2, 'confirmed')
-       RETURNING *`,
-      [ticket_id, user_id]
-    )
+      const bookingResult = await client.query<Booking>(
+        `INSERT INTO bookings (ticket_id, user_id, status)
+         VALUES ($1, $2, 'confirmed')
+         RETURNING *`,
+        [ticket_id, user_id]
+      )
+
+      return bookingResult.rows[0]
+    })
 
     res.status(201).json({
       message: 'Booking confirmed',
-      booking: bookingResult.rows[0],
+      booking: result,
     })
-  } catch (err) {
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ error: err.message })
+      return
+    }
     console.error('POST /bookings error:', err)
     res.status(500).json({ error: 'Internal server error' })
   }
