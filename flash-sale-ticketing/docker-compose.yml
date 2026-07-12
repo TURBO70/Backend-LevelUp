@@ -18,6 +18,14 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: ticketing-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --notify-keyspace-events Ex
+
   api:
     build: .
     container_name: ticketing-api
@@ -27,9 +35,14 @@ services:
     environment:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:password@postgres:5432/ticketing
+      REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
+
+  
 
 volumes:
   pgdata:
