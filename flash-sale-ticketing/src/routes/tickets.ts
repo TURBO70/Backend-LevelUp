@@ -46,7 +46,7 @@ router.post('/bookings', async (req: Request, res: Response) => {
 
   try {
     const result = await withTransaction(async (client) => {
-      // 🔒 This is the fix. FOR UPDATE locks this row until COMMIT/ROLLBACK.
+      // This is the fix. FOR UPDATE locks this row until COMMIT/ROLLBACK.
       // Any other transaction trying to SELECT FOR UPDATE the same row
       // will block here until this one finishes.
       const checkResult = await client.query<Ticket>(
