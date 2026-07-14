@@ -91,6 +91,58 @@ router.post('/reservations', async (req: Request, res: Response) => {
   }
 })
 
+
+
+
+router.post('/bookings/confirm', async (req: Request, res: Response) => {
+  const { ticket_id, user_id } = req.body as BookingRequest
+
+  try {
+    const result = await withTransaction(async (client) => {
+      const checkResult = await client.query<Ticket>(
+        `SELECT id, status, held_by FROM tickets WHERE id = $1 FOR UPDATE`,
+        [ticket_id]
+      )
+
+      if (checkResult.rowCount === 0) {
+        throw { statusCode: 404, message: 'Ticket not found' }
+      }
+
+      const ticket = checkResult.rows[0]
+
+      if (ticket.status !== 'reserved' || ticket.held_by !== user_id) {
+        throw { statusCode: 409, message: 'No active reservation for this user' }
+      }
+
+      await client.query(
+        `UPDATE tickets SET status = 'booked' WHERE id = $1`,
+        [ticket_id]
+      )
+
+      const bookingResult = await client.query<Booking>(
+        `INSERT INTO bookings (ticket_id, user_id, status)
+         VALUES ($1, $2, 'confirmed')
+         RETURNING *`,
+        [ticket_id, user_id]
+      )
+
+      return bookingResult.rows[0]
+    })
+
+    // Reservation is now permanent — remove the TTL key
+    await redis.del(`reservation:${ticket_id}`)
+
+    res.status(201).json({ message: 'Booking confirmed', booking: result })
+  } catch (err: any) {
+    if (err.statusCode) {
+      res.status(err.statusCode).json({ error: err.message })
+      return
+    }
+    console.error('POST /bookings/confirm error:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.post('/bookings', async (req: Request, res: Response) => {
   const { ticket_id, user_id } = req.body as BookingRequest
 
