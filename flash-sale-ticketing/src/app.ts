@@ -1,7 +1,10 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import ticketRoutes from './routes/tickets';
+import { startExpiryListener } from './redis/expiryListener';
 
+// Start the Redis expiry listener
+startExpiryListener();
 dotenv.config();
 
 const app = express();
