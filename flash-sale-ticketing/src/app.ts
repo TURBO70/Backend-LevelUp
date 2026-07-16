@@ -3,7 +3,9 @@ import dotenv from 'dotenv';
 import ticketRoutes from './routes/tickets';
 import { startExpiryListener } from './redis/expiryListener';
 
-// Start the Redis expiry listener
+import { connectRabbitMQ } from './rabbitmq/client'
+import { startWorkers } from './workers/bookingWorkers'
+
 startExpiryListener();
 dotenv.config();
 
