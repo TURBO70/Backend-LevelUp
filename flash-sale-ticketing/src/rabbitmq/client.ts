@@ -10,7 +10,7 @@ export const QUEUES = {
 } as const
 
 export const connectRabbitMQ = async (): Promise<void> => {
-
+ 
   let retries = 5
   while (retries > 0) {
     try {
