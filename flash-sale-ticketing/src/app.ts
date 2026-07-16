@@ -6,7 +6,7 @@ import { startExpiryListener } from './redis/expiryListener';
 import { connectRabbitMQ } from './rabbitmq/client'
 import { startWorkers } from './workers/bookingWorkers'
 
-startExpiryListener();
+// startExpiryListener();
 dotenv.config();
 
 const app = express();
@@ -17,13 +17,18 @@ app.use(express.json());
 // Routes
 app.use('/api/tickets', ticketRoutes);
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
+const start = async () => {
+ 
+  await connectRabbitMQ()
+  startWorkers()
+  startExpiryListener()
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+  })
+}
+
+start().catch(console.error)
+
 
 export default app;
