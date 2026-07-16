@@ -57,11 +57,14 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:password@postgres:5432/ticketing
       REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   
 
