@@ -129,7 +129,6 @@ router.post('/bookings/confirm', async (req: Request, res: Response) => {
         [ticket_id, user_id]
       )
 
-      // Return extra fields needed for the event payload
       return {
         booking: bookingResult.rows[0],
         seat_code: ticket.seat_code,
@@ -147,7 +146,7 @@ router.post('/bookings/confirm', async (req: Request, res: Response) => {
       user_id,
       seat_code: result.seat_code,
       event_name: result.event_name,
-      booked_at: result.booking.booked_at,
+      booked_at: result.booking.booked_at.toISOString(),
     }
 
     // This is instant — just drops a message on the queue and returns
