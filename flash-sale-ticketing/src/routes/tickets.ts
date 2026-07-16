@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express'
 import { query,withTransaction } from '../db/pool'
 import { Ticket, Booking, BookingRequest } from '../types'
 import {redis} from '../redis/client'
-
+import { publishMessage, QUEUES } from '../rabbitmq/client'
+import { BookingConfirmedEvent } from '../types'
 const router = Router()
 
 
