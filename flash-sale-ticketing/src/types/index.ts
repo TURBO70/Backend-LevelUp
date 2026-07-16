@@ -2,6 +2,7 @@ export interface Ticket {
     id: number
     event_id: number
     seat_code: string
+    event_name: string
     status: 'available' | 'reserved' | 'booked'
     held_by: number | null
     held_until: Date | null
