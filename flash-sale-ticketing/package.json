@@ -9,12 +9,14 @@
     "build": "tsc"
   },
   "dependencies": {
+    "amqplib": "^2.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "ioredis": "^5.11.1",
     "pg": "^8.11.5"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/express": "^4.17.21",
     "@types/ioredis": "^4.28.10",
     "@types/node": "^20.12.7",
