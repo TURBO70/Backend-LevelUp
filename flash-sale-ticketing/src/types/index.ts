@@ -20,3 +20,14 @@ export interface Ticket {
     ticket_id: number
     user_id: number
   }
+
+
+
+export interface BookingConfirmedEvent {
+  booking_id: number
+  ticket_id: number
+  user_id: number
+  seat_code: string
+  event_name: string
+  booked_at: string
+}
