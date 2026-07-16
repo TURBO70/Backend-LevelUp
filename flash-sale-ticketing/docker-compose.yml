@@ -26,6 +26,22 @@ services:
       - "6379:6379"
     command: redis-server --notify-keyspace-events Ex
 
+
+
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ticketing-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"    # AMQP protocol — your app connects here
+      - "15672:15672"  # Management UI — browser dashboard
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+ 
+
+
   api:
     build: .
     container_name: ticketing-api
