@@ -101,7 +101,10 @@ router.post('/bookings/confirm', async (req: Request, res: Response) => {
   try {
     const result = await withTransaction(async (client) => {
       const checkResult = await client.query<Ticket>(
-        `SELECT id, status, held_by FROM tickets WHERE id = $1 FOR UPDATE`,
+        `SELECT t.id, t.status, t.held_by, t.seat_code, e.name as event_name
+         FROM tickets t
+         JOIN events e ON e.id = t.event_id
+         WHERE t.id = $1 FOR UPDATE`,
         [ticket_id]
       )
 
@@ -122,18 +125,36 @@ router.post('/bookings/confirm', async (req: Request, res: Response) => {
 
       const bookingResult = await client.query<Booking>(
         `INSERT INTO bookings (ticket_id, user_id, status)
-         VALUES ($1, $2, 'confirmed')
-         RETURNING *`,
+         VALUES ($1, $2, 'confirmed') RETURNING *`,
         [ticket_id, user_id]
       )
 
-      return bookingResult.rows[0]
+      // Return extra fields needed for the event payload
+      return {
+        booking: bookingResult.rows[0],
+        seat_code: ticket.seat_code,
+        event_name: ticket.event_name,
+      }
     })
 
-    // Reservation is now permanent — remove the TTL key
     await redis.del(`reservation:${ticket_id}`)
 
-    res.status(201).json({ message: 'Booking confirmed', booking: result })
+    // TypeScript note — "satisfies BookingConfirmedEvent" checks the shape
+    // is correct at compile time without changing the runtime value
+    const event: BookingConfirmedEvent = {
+      booking_id: result.booking.id,
+      ticket_id,
+      user_id,
+      seat_code: result.seat_code,
+      event_name: result.event_name,
+      booked_at: result.booking.booked_at,
+    }
+
+    // This is instant — just drops a message on the queue and returns
+    // The workers below handle the rest asynchronously
+    publishMessage(QUEUES.BOOKING_CONFIRMED, event)
+
+    res.status(201).json({ message: 'Booking confirmed', booking: result.booking })
   } catch (err: any) {
     if (err.statusCode) {
       res.status(err.statusCode).json({ error: err.message })
