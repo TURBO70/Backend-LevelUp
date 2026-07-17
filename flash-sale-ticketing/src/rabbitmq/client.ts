@@ -1,7 +1,7 @@
-import amqplib, { Channel, Connection } from 'amqplib'
+import amqplib, { Channel, ChannelModel } from 'amqplib'
 
 
-let connection: Connection | null = null
+let connection: ChannelModel | null = null
 let channel: Channel | null = null
 
 export const QUEUES = {
