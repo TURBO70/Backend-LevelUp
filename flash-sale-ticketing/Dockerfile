@@ -29,6 +29,7 @@ RUN npm install --omit=dev
 # Copy ONLY the compiled output from the builder stage
 # This is the key line — nothing else from "builder" comes along
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/public ./public
 
 EXPOSE 3000
 
