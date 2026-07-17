@@ -27,7 +27,7 @@ export const startWorkers = (): void => {
       channel.nack(msg, false, true)
     }
   })
-
+//
   channel.consume(QUEUES.BOOKING_CONFIRMED, async (msg) => {
     if (!msg) return
 
