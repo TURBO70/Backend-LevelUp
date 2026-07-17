@@ -4,6 +4,8 @@ import { Ticket, Booking, BookingRequest } from '../types'
 import {redis} from '../redis/client'
 import { publishMessage, QUEUES } from '../rabbitmq/client'
 import { BookingConfirmedEvent } from '../types'
+import { broadcastUpdate } from '../websocket/server'
+
 const router = Router()
 
 
@@ -77,6 +79,7 @@ router.post('/reservations', async (req: Request, res: Response) => {
     // TypeScript note — 'EX', 600 means "expire in 600 seconds"
     // This is what makes the hold actually time out
     await redis.set(`reservation:${ticket_id}`, user_id, 'EX', 600)
+    await broadcastUpdate()   
 
     res.status(201).json({
       message: 'Ticket reserved for 10 minutes',
@@ -137,6 +140,7 @@ router.post('/bookings/confirm', async (req: Request, res: Response) => {
     })
 
     await redis.del(`reservation:${ticket_id}`)
+    await broadcastUpdate() 
 
     // TypeScript note — "satisfies BookingConfirmedEvent" checks the shape
     // is correct at compile time without changing the runtime value
