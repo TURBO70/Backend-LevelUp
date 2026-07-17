@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flash Sale — Live Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 2rem;
+    }
+    h1 { font-size: 1.5rem; color: #94a3b8; letter-spacing: 0.05em; }
+    .cards {
+      display: flex;
+      gap: 1.5rem;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 2rem 2.5rem;
+      text-align: center;
+      min-width: 150px;
+    }
+    .card .count {
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .card .label {
+      font-size: 0.85rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .available .count { color: #4ade80; }
+    .reserved  .count { color: #facc15; }
+    .booked    .count { color: #f87171; }
+    .status {
+      font-size: 0.8rem;
+      color: #475569;
+    }
+    .status span {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #475569;
+      margin-right: 6px;
+    }
+    .status.connected span { background: #4ade80; }
+  </style>
+</head>
+<body>
+  <h1>FLASH SALE — LIVE INVENTORY</h1>
+
+  <div class="cards">
+    <div class="card available">
+      <div class="count" id="available">—</div>
+      <div class="label">Available</div>
+    </div>
+    <div class="card reserved">
+      <div class="count" id="reserved">—</div>
+      <div class="label">Reserved</div>
+    </div>
+    <div class="card booked">
+      <div class="count" id="booked">—</div>
+      <div class="label">Booked</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">
+    <span></span>Connecting...
+  </div>
+
+  <script>
+    const ws = new WebSocket(`ws://${location.host}`)
+    const status = document.getElementById('status')
+
+    ws.onopen = () => {
+      status.className = 'status connected'
+      status.innerHTML = '<span></span>Live'
+    }
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      if (data.type !== 'TICKET_UPDATE') return
+
+      document.getElementById('available').textContent = data.available
+      document.getElementById('reserved').textContent  = data.reserved
+      document.getElementById('booked').textContent    = data.booked
+    }
+
+    ws.onclose = () => {
+      status.className = 'status'
+      status.innerHTML = '<span></span>Disconnected — refresh to reconnect'
+    }
+  </script>
+</body>
+</html>
