@@ -19,3 +19,8 @@ export const reservationCounter = new Counter({
     registers: [register],
 })
 
+export const ticketReleasedCounter = new Counter({
+    name: 'ticket_released_total',
+    help: 'Total number of tickets released after TTL expiry',
+    registers: [register],
+})
