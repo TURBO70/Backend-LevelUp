@@ -21,6 +21,12 @@ const server = http.createServer(app)
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+import { register } from './metrics'
+
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType)
+  res.end(await register.metrics())
+})
 app.use(express.static(path.join(__dirname, "../public")));// Routes
 app.use('/api/tickets', ticketRoutes);
 
