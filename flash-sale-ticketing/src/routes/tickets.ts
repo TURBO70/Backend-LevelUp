@@ -5,7 +5,10 @@ import {redis} from '../redis/client'
 import { publishMessage, QUEUES } from '../rabbitmq/client'
 import { BookingConfirmedEvent } from '../types'
 import { broadcastUpdate } from '../websocket/server'
-
+import {
+  bookingCounter,
+  reservationCounter,
+} from '../metrics'
 const router = Router()
 
 
