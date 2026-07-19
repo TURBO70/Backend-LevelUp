@@ -24,3 +24,13 @@ export const ticketReleasedCounter = new Counter({
     help: 'Total number of tickets released after TTL expiry',
     registers: [register],
 })
+
+
+// it helps to know the duration of each request, so we can monitor performance and identify bottlenecks
+export const httpDuration = new Histogram({
+  name: 'http_request_duration_ms',
+  help: 'HTTP request duration in milliseconds',
+  labelNames: ['method', 'route', 'status_code'] as const,
+  buckets: [5, 10, 25, 50, 100, 250, 500, 1000],
+  registers: [register],
+})
