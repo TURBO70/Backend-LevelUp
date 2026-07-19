@@ -83,13 +83,14 @@ router.post('/reservations', async (req: Request, res: Response) => {
     // This is what makes the hold actually time out
     await redis.set(`reservation:${ticket_id}`, user_id, 'EX', 600)
     await broadcastUpdate()   
-
+    reservationCounter.inc({ status: 'success' })
     res.status(201).json({
       message: 'Ticket reserved for 10 minutes',
       ...result,
     })
   } catch (err: any) {
     if (err.statusCode) {
+      reservationCounter.inc({ status: 'failed' })
       res.status(err.statusCode).json({ error: err.message })
       return
     }
@@ -159,10 +160,11 @@ router.post('/bookings/confirm', async (req: Request, res: Response) => {
     // This is instant — just drops a message on the queue and returns
     // The workers below handle the rest asynchronously
     publishMessage(QUEUES.BOOKING_CONFIRMED, event)
-
+  bookingCounter.inc({ status: 'success' })
     res.status(201).json({ message: 'Booking confirmed', booking: result.booking })
   } catch (err: any) {
     if (err.statusCode) {
+      bookingCounter.inc({ status: 'failed' })        
       res.status(err.statusCode).json({ error: err.message })
       return
     }
