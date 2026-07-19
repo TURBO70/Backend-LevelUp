@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import http from 'http'
-
+import { httpDuration } from './metrics'
 import ticketRoutes from './routes/tickets';
 import { startExpiryListener } from './redis/expiryListener';
 
@@ -28,6 +28,19 @@ app.get('/metrics', async (_req, res) => {
   res.end(await register.metrics())
 })
 app.use(express.static(path.join(__dirname, "../public")));// Routes
+app.use((req, res, next) => {
+
+  const end = httpDuration.startTimer({
+    method: req.method,
+    route: req.path,
+  })
+
+  res.on('finish', () => {
+    end({ status_code: res.statusCode })
+  })
+
+  next()
+})
 app.use('/api/tickets', ticketRoutes);
 
 const start = async () => {
