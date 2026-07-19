@@ -1,7 +1,7 @@
 import { redisSubscriber } from './client'
 import { pool } from '../db/pool'
 import { broadcastUpdate } from '../websocket/server'
-
+import { ticketReleasedCounter } from '../metrics'
 
 export const startExpiryListener = () => {
   // Redis publishes expired-key events on this special channel
@@ -23,6 +23,7 @@ export const startExpiryListener = () => {
          WHERE id = $1 AND status = 'reserved'`,
         [ticketId]
       )
+      ticketReleasedCounter.inc()
       await broadcastUpdate() 
     } catch (err) {
       console.error(`Failed to release expired ticket ${ticketId}:`, err)
