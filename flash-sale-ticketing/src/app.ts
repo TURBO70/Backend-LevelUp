@@ -9,7 +9,7 @@ import { connectRabbitMQ } from './rabbitmq/client'
 import { startWorkers } from './workers/bookingWorkers'
 import { initWebSocketServer } from './websocket/server'
 import path from 'path'
-
+import { bookingCounter, reservationCounter } from './metrics'
 
 
 // startExpiryListener();
@@ -46,6 +46,11 @@ app.use('/api/tickets', ticketRoutes);
 const start = async () => {
  
   await connectRabbitMQ()
+
+
+  bookingCounter.inc({ status: 'success' })
+  reservationCounter.inc({ status: 'success' })
+  
   startWorkers()
   startExpiryListener()
   initWebSocketServer(server)
