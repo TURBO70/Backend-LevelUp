@@ -31,7 +31,7 @@ export const connectRabbitMQ = async (): Promise<void> => {
     }
   }
   throw new Error('Could not connect to RabbitMQ after retries')
-}
+}   
 
 export const publishMessage = (queue: string, payload: object): void => {
   if (!channel) throw new Error('RabbitMQ channel not initialized')
