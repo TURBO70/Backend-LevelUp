@@ -34,3 +34,4 @@ export const httpDuration = new Histogram({
   buckets: [5, 10, 25, 50, 100, 250, 500, 1000],
   registers: [register],
 })
+
