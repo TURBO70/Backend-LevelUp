@@ -4,11 +4,9 @@ import { broadcastUpdate } from '../websocket/server'
 import { ticketReleasedCounter } from '../metrics'
 
 export const startExpiryListener = () => {
-  // Redis publishes expired-key events on this special channel
   redisSubscriber.subscribe('__keyevent@0__:expired')
 
   redisSubscriber.on('message', async (_channel, expiredKey) => {
-    // expiredKey looks like: "reservation:42"
     if (!expiredKey.startsWith('reservation:')) return
 
     const ticketId = parseInt(expiredKey.split(':')[1])
