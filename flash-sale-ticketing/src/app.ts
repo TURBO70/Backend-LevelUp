@@ -12,7 +12,6 @@ import path from 'path'
 import { bookingCounter, reservationCounter } from './metrics'
 
 
-// startExpiryListener();
 dotenv.config();
 
 const app = express();
