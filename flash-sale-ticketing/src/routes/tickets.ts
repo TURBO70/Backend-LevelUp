@@ -12,8 +12,8 @@ import {
 const router = Router()
 
 
+
 router.get('/tickets/:eventId', async (req: Request, res: Response) => {
- 
   const eventId = parseInt(req.params.eventId)
 
   if (isNaN(eventId)) {
@@ -22,6 +22,16 @@ router.get('/tickets/:eventId', async (req: Request, res: Response) => {
   }
 
   try {
+    const cacheKey = `tickets:cache:${eventId}`
+
+    // ── 1. Check Redis first ──────────────────────────────
+    const cached = await redis.get(cacheKey)
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      return res.json({ ...parsed, source: 'cache' })
+    }
+
+    // ── 2. Cache miss → hit Postgres ─────────────────────
     const result = await query<Ticket>(
       `SELECT id, seat_code, status
        FROM tickets
@@ -30,11 +40,18 @@ router.get('/tickets/:eventId', async (req: Request, res: Response) => {
       [eventId]
     )
 
-    res.json({
+    const payload = {
       event_id: eventId,
       available_count: result.rowCount,
       tickets: result.rows,
-    })
+    }
+
+    // ── 3. Store in Redis for 30 seconds ─────────────────
+    // TTL قصير عشان الـ flash sale محتاج data fresh
+    // مش ساعة زي الـ caching العادي
+    await redis.set(cacheKey, JSON.stringify(payload), 'EX', 30)
+
+    res.json({ ...payload, source: 'db' })
   } catch (err) {
     console.error('GET /tickets error:', err)
     res.status(500).json({ error: 'Internal server error' })
