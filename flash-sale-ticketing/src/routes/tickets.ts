@@ -24,7 +24,6 @@ router.get('/tickets/:eventId', async (req: Request, res: Response) => {
   try {
     const cacheKey = `tickets:cache:${eventId}`
 
-    // ── 1. Check Redis first ──────────────────────────────
     const cached = await redis.get(cacheKey)
     if (cached) {
       const parsed = JSON.parse(cached)
