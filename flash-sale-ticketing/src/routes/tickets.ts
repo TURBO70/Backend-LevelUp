@@ -12,6 +12,11 @@ import {
 const router = Router()
 
 
+const invalidateTicketCache = async (eventId: number) => {
+  await redis.del(`tickets:cache:${eventId}`)
+}
+
+
 
 router.get('/tickets/:eventId', async (req: Request, res: Response) => {
   const eventId = parseInt(req.params.eventId)
