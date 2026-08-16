@@ -30,7 +30,6 @@ router.get('/tickets/:eventId', async (req: Request, res: Response) => {
       return res.json({ ...parsed, source: 'cache' })
     }
 
-    // ── 2. Cache miss → hit Postgres ─────────────────────
     const result = await query<Ticket>(
       `SELECT id, seat_code, status
        FROM tickets
@@ -45,10 +44,8 @@ router.get('/tickets/:eventId', async (req: Request, res: Response) => {
       tickets: result.rows,
     }
 
-    // ── 3. Store in Redis for 30 seconds ─────────────────
-    // TTL قصير عشان الـ flash sale محتاج data fresh
-    // مش ساعة زي الـ caching العادي
-    await redis.set(cacheKey, JSON.stringify(payload), 'EX', 30)
+
+    await redis.set(cacheKey, JSON.stringify(payload), 'EX', 15)
 
     res.json({ ...payload, source: 'db' })
   } catch (err) {
